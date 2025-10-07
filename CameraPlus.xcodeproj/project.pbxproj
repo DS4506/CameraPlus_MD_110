@@ -10,9 +10,33 @@
 		47643D552E91A9390095512F /* CameraPlus.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CameraPlus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		47160C642E94EC7B007E5E41 /* Exceptions for "CameraPlus" folder in "CameraPlus" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				CameraPlusModel.xcdatamodeld,
+			);
+			target = 47643D542E91A9390095512F /* CameraPlus */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		47160C632E94EA94007E5E41 /* Exceptions for "CameraPlus" folder in "Copy Bundle Resources" phase from "CameraPlus" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 47643D532E91A9390095512F /* Resources */;
+			membershipExceptions = (
+				CameraPlusModel.xcdatamodeld,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		47643D572E91A9390095512F /* CameraPlus */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				47160C642E94EC7B007E5E41 /* Exceptions for "CameraPlus" folder in "CameraPlus" target */,
+				47160C632E94EA94007E5E41 /* Exceptions for "CameraPlus" folder in "Copy Bundle Resources" phase from "CameraPlus" target */,
+			);
 			path = CameraPlus;
 			sourceTree = "<group>";
 		};

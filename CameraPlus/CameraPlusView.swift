@@ -1,10 +1,18 @@
+//
+//  CameraPlusView.swift
+//
+
 import SwiftUI
-import UIKit
+import UIKit          // <- fixes 'UIImage' not found
 import AVFoundation
+import CoreData       // <- needed for viewContext
 
 struct CameraPlusView: View {
 
-    // MARK: - State
+    // Core Data context for saving
+    @Environment(\.managedObjectContext) private var viewContext   // <- fixes 'viewContext' not found
+
+    // State
     @State private var showingPicker = false
     @State private var selectedSource: UIImagePickerController.SourceType = .photoLibrary
     @State private var originalImage: UIImage?
@@ -21,11 +29,10 @@ struct CameraPlusView: View {
     @State private var isComparing = false
     @State private var showSavedToast = false
 
-    // MARK: - Services
+    // Services
     private let processor = ImageProcessor()
     private let saver = PhotoSaver()
 
-    // MARK: - Body
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
@@ -38,12 +45,11 @@ struct CameraPlusView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
 
-                // Image preview card
+                // Preview
                 Group {
                     if originalImage != nil || processedImage != nil {
                         GeometryReader { geo in
                             ZStack {
-                                // Original underlay
                                 if let orig = originalImage {
                                     Image(uiImage: orig)
                                         .resizable()
@@ -51,8 +57,6 @@ struct CameraPlusView: View {
                                         .frame(maxWidth: geo.size.width, maxHeight: geo.size.height)
                                         .opacity(isComparing ? 1 : 0)
                                 }
-
-                                // Processed overlay
                                 if let edited = processedImage ?? originalImage {
                                     Image(uiImage: edited)
                                         .resizable()
@@ -63,10 +67,7 @@ struct CameraPlusView: View {
                             }
                         }
                         .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
-                        )
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.secondary.opacity(0.2), lineWidth: 1))
                         .contentShape(Rectangle())
                         .onLongPressGesture(minimumDuration: 0.01, maximumDistance: .infinity, pressing: { down in
                             isComparing = down
@@ -86,7 +87,6 @@ struct CameraPlusView: View {
                         .frame(height: 280)
                         .padding(.horizontal)
                     } else {
-                        // Placeholder
                         ZStack {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.secondary.opacity(0.05))
@@ -122,7 +122,7 @@ struct CameraPlusView: View {
                         .disabled(originalImage == nil && processedImage == nil)
                     }
 
-                    // Filter picker
+                    // Filter + intensity
                     HStack {
                         Text("Filter")
                         Spacer()
@@ -137,7 +137,6 @@ struct CameraPlusView: View {
                         }
                     }
 
-                    // Intensity slider (conditional)
                     if selectedFilter.supportsIntensity {
                         VStack(alignment: .leading) {
                             HStack {
@@ -153,7 +152,6 @@ struct CameraPlusView: View {
                         }
                     }
 
-                    // Reset / Original toggle
                     HStack {
                         Button(role: .destructive) {
                             originalImage = nil
@@ -173,6 +171,7 @@ struct CameraPlusView: View {
                         .disabled(originalImage == nil)
                     }
                     .padding(.horizontal)
+
                     Spacer(minLength: 8)
                 }
                 .padding(.horizontal)
@@ -188,9 +187,7 @@ struct CameraPlusView: View {
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
                         .background(.ultraThinMaterial, in: Capsule())
-                        .overlay(
-                            Capsule().stroke(Color.secondary.opacity(0.25), lineWidth: 1)
-                        )
+                        .overlay(Capsule().stroke(Color.secondary.opacity(0.25), lineWidth: 1))
                         .padding(.bottom, 24)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                         .transition(.opacity)
@@ -206,14 +203,10 @@ struct CameraPlusView: View {
         }
         .alert("Saved", isPresented: $showSaveAlert) {
             Button("OK", role: .cancel) { }
-        } message: {
-            Text(saveMessage)
-        }
+        } message: { Text(saveMessage) }
         .alert("Error", isPresented: $showError) {
             Button("OK", role: .cancel) { }
-        } message: {
-            Text(errorMessage)
-        }
+        } message: { Text(errorMessage) }
     }
 
     // MARK: - Actions
@@ -224,8 +217,6 @@ struct CameraPlusView: View {
             showError = true
             return
         }
-
-        // Optional: quick permission check for nicer UX
         if selectedSource == .camera {
             switch AVCaptureDevice.authorizationStatus(for: .video) {
             case .denied, .restricted:
@@ -234,11 +225,9 @@ struct CameraPlusView: View {
                 return
             case .notDetermined, .authorized:
                 break
-            @unknown default:
-                break
+            @unknown default: break
             }
         }
-
         showingPicker = true
     }
 
@@ -252,11 +241,15 @@ struct CameraPlusView: View {
 
     private func saveImage() {
         guard let imageToSave = (processedImage ?? originalImage) else { return }
+
         saver.writeToPhotoAlbum(image: imageToSave) { error in
             if let error = error {
                 saveMessage = "Failed to save: \(error.localizedDescription)"
             } else {
                 saveMessage = "Image saved to Photos."
+                // Save to Core Data using a robust path that avoids subclass mapping issues
+                saveToCoreData(image: imageToSave, filter: selectedFilter.rawValue, intensity: intensity)
+
                 let gen = UINotificationFeedbackGenerator()
                 gen.notificationOccurred(.success)
                 withAnimation { showSavedToast = true }
@@ -267,5 +260,19 @@ struct CameraPlusView: View {
             showSaveAlert = true
         }
     }
-}
 
+    // MARK: - Core Data (robust insert without subclass)
+    private func saveToCoreData(image: UIImage, filter: String, intensity: Double) {
+        guard let entity = NSEntityDescription.entity(forEntityName: "EditedPhoto", in: viewContext) else {
+            print("❌ Entity 'EditedPhoto' not found in loaded model.")
+            return
+        }
+        let obj = NSManagedObject(entity: entity, insertInto: viewContext)
+        obj.setValue(UUID(), forKey: "id")
+        obj.setValue(Date(), forKey: "createdAt")
+        obj.setValue(filter, forKey: "filter")
+        obj.setValue(intensity, forKey: "intensity")
+        obj.setValue(image.jpegData(compressionQuality: 0.9), forKey: "imageData")
+        do { try viewContext.save() } catch { print("❌ Core Data save error: \(error)") }
+    }
+}

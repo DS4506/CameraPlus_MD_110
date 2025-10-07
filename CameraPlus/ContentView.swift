@@ -3,27 +3,37 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         NavigationStack {
-            List {
-                Section("Camera") {
-                    NavigationLink("Camera Plus") {
-                        CameraPlusView()
-                    }
+            VStack(spacing: 20) {
+                NavigationLink {
+                    CameraPlusView()
+                } label: {
+                    Text("Camera Plus")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(.tint.opacity(0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
 
-                Section("Utilities") {
-                    // Preview is a dev tool, but you can navigate to it on-device too.
-                    NavigationLink("Processor Preview (on-device)") {
-                        ProcessorPreview()
-                    }
+                NavigationLink {
+                    GalleryView()
+                } label: {
+                    Text("Saved Photos")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(.tint.opacity(0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+
+                Spacer()
             }
-            .navigationTitle("CameraPlus")
-            .listStyle(.insetGrouped)
+            .padding()
+            .navigationTitle("Camera Plus")
         }
     }
 }
 
-// If you want a canvas preview of the menu itself:
 #Preview {
     ContentView()
 }
