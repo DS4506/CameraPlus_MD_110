@@ -1,24 +1,29 @@
-//
-//  ContentView.swift
-//  CameraPlus
-//
-//  Created by Willie Earl on 10/4/25.
-//
-
 import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            List {
+                Section("Camera") {
+                    NavigationLink("Camera Plus") {
+                        CameraPlusView()
+                    }
+                }
+
+                Section("Utilities") {
+                    // Preview is a dev tool, but you can navigate to it on-device too.
+                    NavigationLink("Processor Preview (on-device)") {
+                        ProcessorPreview()
+                    }
+                }
+            }
+            .navigationTitle("CameraPlus")
+            .listStyle(.insetGrouped)
         }
-        .padding()
     }
 }
 
+// If you want a canvas preview of the menu itself:
 #Preview {
     ContentView()
 }
